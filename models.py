@@ -31,7 +31,7 @@ class HilbertClassifier(nn.Module):
         # x = self.relu(x)
         # x = self.relu(x)
         # x = self.sig(x)
-        return dF
+        return dF, rise, decay
 
     def classifyingConvSeq(self, in_channels, out_channels, kernel=3, padding=1):
         return nn.Sequential(

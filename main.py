@@ -6,8 +6,6 @@ from data_loader import CustomSequenceDataset
 
 import torchsummary
 
-import matplotlib.pyplot as plt
-
 import os
 
 from models import *
@@ -24,7 +22,8 @@ if __name__ == "__main__":
 
     print("loading data...")
     
-    training_data = CustomSequenceDataset()
+    training_data = CustomSequenceDataset(saved_dataloader="data/dataloader_dict.pth")
+    # training_data = CustomSequenceDataset()
     train_dataloader = DataLoader(training_data, batch_size=64, shuffle=True)
 
     print("started main at: " + getNowString())
@@ -37,9 +36,9 @@ if __name__ == "__main__":
         now = getNowString()
         model=HilbertClassifier()
 
-        #initialize and torchsummary
-        tempindex, (tempsequence, tempmetadata) = next(enumerate(train_dataloader))
-        model(hilbertCurve(tempsequence[0]).squeeze().unsqueeze(0).unsqueeze(0))
+        #initialize weights and torchsummary
+        _, (_, tempsequence, _) = next(enumerate(train_dataloader))
+        model(tempsequence)
         torchsummary.summary(model, (1, 32, 32))
 
         print("training " + f"models/{model.__class__.__name__}_weights_{now}.pth")
