@@ -20,10 +20,11 @@ EPOCH_NUM = 30
 
 if __name__ == "__main__":
 
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     print("loading data...")
     
     training_data = CustomSequenceDataset()
-
     train_dataloader = DataLoader(training_data, batch_size=64, shuffle=True)
 
     print("started main at: " + getNowString())
@@ -48,6 +49,7 @@ if __name__ == "__main__":
                         save_int=500, 
                         save_pth=f"models/{model.__class__.__name__}_weights_{now}.pth",
                         train_data=train_dataloader,
+                        device=device
                         )
         f = open(f"models/{testModel.__class__.__name__}_structure_{now}.txt", "w")
         print(testModel, file=f)
@@ -60,11 +62,11 @@ if __name__ == "__main__":
         if full_models: 
             if len(full_models) > 1: raise Exception("model number not unique")
             print("loading " + "models/" + full_models[0])
-            testModel = torch.load("models/"+full_models[0], weights_only=False)
+            testModel = torch.load("models/"+full_models[0], weights_only=False).to(device=device)
             torchsummary.summary(testModel, (1, 32, 32))
         else:
             # TODO DELETE THESE
-            testModel = HilbertClassifier()
+            testModel = HilbertClassifier().to(device=device)
             print("loading " + f"models/{testModel.__class__.__name__}_weights_{now}.pth")
             checkpoint = torch.load(f"models/{testModel.__class__.__name__}_weights_{now}.pth", weights_only=True)
             testModel.load_state_dict(checkpoint['model_state_dict'])
