@@ -68,10 +68,10 @@ def train_model(model = HilbertClassifier(),
 
             if log_int is not None:
                 if not index % log_int:
-                    if print_logs: print(f"Epoch: {epoch}, Batch: {index}/{len(train_data)}, Loss: {loss}, time: {time.time() - start}")
+                    if print_logs: print(f"Epoch: {epoch}, Batch: {index}/{len(train_data)}, Loss: {loss1:.2f} dF + {loss2:.2f} rise + {loss3:.2f} decay = {loss:.2f}, time: {time.time() - start:.2f}s")
                     start = time.time()
                 
-    print(f"Total time: {time.time() - base}")
+    print(f"Total time: {time.time() - base:.2f}s")
     save_model(model, save_pth, epoch, index, loss)
     
     return model, logs

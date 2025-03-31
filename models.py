@@ -15,6 +15,7 @@ class HilbertClassifier(nn.Module):
             #self.classifyingConvSeq(64, 128),   # ((8-3+2*1)/1)+1 = 8, 8->4
             #self.classifyingConvSeq(128, 256),  # ((4-3+2*1)/1)+1 = 4, 4->2
             #self.classifyingConvSeq(256, 512),  # ((2-3+2*1)/1)+1 = 2, 2->1
+            nn.Flatten(),
         )
         self.dFreg = self.classifyingLinSeq(1)
         self.risereg = self.classifyingLinSeq(1)
@@ -45,7 +46,6 @@ class HilbertClassifier(nn.Module):
 
     def classifyingLinSeq(self, output_size):
         return nn.Sequential(
-            nn.Flatten(),
             nn.LazyLinear(100*output_size),
             # nn.Linear(2 * 2 * 256, 1024),
             nn.ReLU(),

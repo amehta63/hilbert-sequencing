@@ -13,7 +13,7 @@ from utils import *
 from train_model import *
 
 BATCH_SIZE = 64
-EPOCH_NUM = 30
+EPOCH_NUM = 10
 
 
 if __name__ == "__main__":
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     
     training_data = CustomSequenceDataset(saved_dataloader="data/dataloader_dict.pth")
     # training_data = CustomSequenceDataset()
-    train_dataloader = DataLoader(training_data, batch_size=64, shuffle=True)
+    train_dataloader = DataLoader(training_data, batch_size=BATCH_SIZE, shuffle=True)
 
     print("started main at: " + getNowString())
     
@@ -44,7 +44,7 @@ if __name__ == "__main__":
         print("training " + f"models/{model.__class__.__name__}_weights_{now}.pth")
         testModel, logs = train_model(model = model,
                         log_int=100, 
-                        epochs=1, 
+                        epochs=EPOCH_NUM, 
                         save_int=500, 
                         save_pth=f"models/{model.__class__.__name__}_weights_{now}.pth",
                         train_data=train_dataloader,
