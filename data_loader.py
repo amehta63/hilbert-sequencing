@@ -3,6 +3,7 @@ import torch
 from torch.utils.data import Dataset
 import torch.nn.functional as functional
 from utils import *
+from tqdm import tqdm
 
 
 class CustomSequenceDataset(Dataset):
@@ -41,7 +42,8 @@ class CustomSequenceDataset(Dataset):
 
             self.metadata = {}
             self.seqlist = []
-            for file in self.data.keys():
+            print("Generating sequence data and metadata...")
+            for file in tqdm(self.data.keys()):
                 if file == 'variant':
                     self.metadata[file] = torch.FloatTensor(np.asarray(self.data[file], dtype=float)).squeeze().unsqueeze(1)
                 elif file == 'sequence':
@@ -53,8 +55,9 @@ class CustomSequenceDataset(Dataset):
 
             self.p = (int(np.ceil(np.sqrt(self.sequence_length)))-1).bit_length()
 
+            print("Generating Hilbert curved sequences...")
             self.hilbert_seqlist = []
-            for seq in self.seqlist:
+            for seq in tqdm(self.seqlist):
                 sequence = functional.pad(seq, (0, 2**(2*self.p)-self.sequence_length))
                 twoDseq = hilbertCurve(sequence).squeeze()
                 twoDseq = twoDseq.reshape(-1, 2**self.p, 2**self.p)

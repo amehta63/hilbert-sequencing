@@ -22,8 +22,8 @@ if __name__ == "__main__":
 
     print("loading data...")
     
-    training_data = CustomSequenceDataset(saved_dataloader="data/dataloader_dict.pth")
-    # training_data = CustomSequenceDataset()
+    # training_data = CustomSequenceDataset(saved_dataloader="data/dataloader_dict.pth")
+    training_data = CustomSequenceDataset()
     train_dataloader = DataLoader(training_data, batch_size=BATCH_SIZE, shuffle=True)
 
     print("started main at: " + getNowString())
