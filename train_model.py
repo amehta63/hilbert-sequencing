@@ -34,6 +34,11 @@ def train_model(model = HilbertClassifier(),
         model.train()
         for index, (sequence, twoDseq, metadata) in enumerate(train_data):
             # print(f"for loop time: {time.time() - substart}"); substart = time.time()
+            sequence = sequence.to(device)
+            twoDseq = twoDseq.to(device)
+            for md in metadata.keys():
+                metadata[md] = metadata[md].to(device)
+                
             with torch.set_grad_enabled(True):
 
                 # p = (int(np.ceil(np.sqrt(len(sequence[0]))))-1).bit_length()

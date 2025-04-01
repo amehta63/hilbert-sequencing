@@ -34,10 +34,11 @@ if __name__ == "__main__":
     
     if not now:
         now = getNowString()
-        model=HilbertClassifier()
+        model=HilbertClassifier().to(device)
 
         #initialize weights and torchsummary
         _, (_, tempsequence, _) = next(enumerate(train_dataloader))
+        tempsequence = tempsequence.to(device)
         model(tempsequence)
         torchsummary.summary(model, (1, 32, 32))
 
