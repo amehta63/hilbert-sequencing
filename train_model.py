@@ -38,7 +38,7 @@ def train_model(model = HilbertClassifier(),
             twoDseq = twoDseq.to(device)
             for md in metadata.keys():
                 metadata[md] = metadata[md].to(device)
-                
+
             with torch.set_grad_enabled(True):
 
                 # p = (int(np.ceil(np.sqrt(len(sequence[0]))))-1).bit_length()
@@ -47,7 +47,7 @@ def train_model(model = HilbertClassifier(),
                 # twoDseq = sequence.clone()
                 # twoDseq = twoDseq.reshape(-1, 2**p, 2**p)
                 # for i in range(twoDseq.shape[0]):
-                #     twoDseq[i] = hilbertCurve(sequence[i]).squeeze()
+                #     twoDseq[i] = hilbertCurve1Dto2D(sequence[i]).squeeze()
                 # twoDseq = twoDseq.unsqueeze(1)
                 # print(f"twoDseq time: {time.time() - substart}"); substart = time.time()
 

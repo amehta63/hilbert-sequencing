@@ -26,7 +26,7 @@ class CustomSequenceDataset(Dataset):
         except Exception as e:
             if saved_dataloader is not None:
                 raise e
-            print("No existing dataset passed, loading full dataset. This will take up to 15 minutes.")
+            print("No existing dataset passed, loading full dataset. This will take up to 20 minutes.")
             self.sequence_length = sequence_length
             datadict = {}
             self.data = np.load(data_file)
@@ -59,7 +59,7 @@ class CustomSequenceDataset(Dataset):
             self.hilbert_seqlist = []
             for seq in tqdm(self.seqlist):
                 sequence = functional.pad(seq, (0, 2**(2*self.p)-self.sequence_length))
-                twoDseq = hilbertCurve(sequence).squeeze()
+                twoDseq = hilbertCurve1Dto2D(sequence).squeeze()
                 twoDseq = twoDseq.reshape(-1, 2**self.p, 2**self.p)
                 self.hilbert_seqlist.append(twoDseq)
             self.hilbert_seqlist = torch.cat(self.hilbert_seqlist, dim=0).unsqueeze(1)
