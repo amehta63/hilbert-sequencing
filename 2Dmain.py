@@ -22,8 +22,8 @@ if __name__ == "__main__":
 
     print("loading data...")
     
-    # training_data = CustomSequenceDataset(saved_dataloader="data/dataloader_dict.pth")
-    training_data = CustomSequenceDataset()
+    # training_data = CustomSequenceDataset(saved_dataloader="data/dataloader_dict.pth", dimensions=3)
+    training_data = CustomSequenceDataset(dimensions=3)
     train_dataloader = DataLoader(training_data, batch_size=BATCH_SIZE, shuffle=True)
 
     print("started main at: " + getNowString())
@@ -37,7 +37,7 @@ if __name__ == "__main__":
         model=HilbertClassifier().to(device)
 
         #initialize weights and torchsummary
-        _, (_, tempsequence, _) = next(enumerate(train_dataloader))
+        _, (_, tempsequence, _, _) = next(enumerate(train_dataloader))
         tempsequence = tempsequence.to(device)
         model(tempsequence)
         torchsummary.summary(model, (1, 32, 32))

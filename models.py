@@ -10,6 +10,7 @@ class HilbertClassifier(nn.Module):
         self.return_labels = return_labels
 
         self.preClassifier = nn.Sequential(
+            nn.LazyConv2d(1, 3, 1, 1),
             self.classifyingConvSeq(1, 32),     # ((32-3+2*1)/1)+1 = 32, 32->16 
             self.classifyingConvSeq(32, 64),    # ((16-3+2*1)/1)+1 = 16, 16->8 
             #self.classifyingConvSeq(64, 128),   # ((8-3+2*1)/1)+1 = 8, 8->4

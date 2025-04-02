@@ -11,6 +11,7 @@ from utils import *
 def train_model(model = HilbertClassifier(),
     epochs=1,
     train_data=None,
+    dimensions='2D',
     log_int=100,
     save_int=None,
     save_pth=f"models/default_{datetime.datetime.now().strftime('%Y%m%d%H%M')}.pth",
@@ -32,27 +33,18 @@ def train_model(model = HilbertClassifier(),
     
     for epoch in range(epochs):
         model.train()
-        for index, (sequence, twoDseq, metadata) in enumerate(train_data):
+        for index, (sequence, twoDseq, threeDseq, metadata) in enumerate(train_data):
             # print(f"for loop time: {time.time() - substart}"); substart = time.time()
             sequence = sequence.to(device)
-            twoDseq = twoDseq.to(device)
+            if dimensions == '2D': input = twoDseq.to(device)
+            if dimensions == '3D': input = threeDseq.to(device)
             for md in metadata.keys():
                 metadata[md] = metadata[md].to(device)
 
             with torch.set_grad_enabled(True):
 
-                # p = (int(np.ceil(np.sqrt(len(sequence[0]))))-1).bit_length()
-
-                # sequence = functional.pad(sequence, (0, 2**(2*p)-len(sequence[0]))).to(device=device)
-                # twoDseq = sequence.clone()
-                # twoDseq = twoDseq.reshape(-1, 2**p, 2**p)
-                # for i in range(twoDseq.shape[0]):
-                #     twoDseq[i] = hilbertCurve1Dto2D(sequence[i]).squeeze()
-                # twoDseq = twoDseq.unsqueeze(1)
-                # print(f"twoDseq time: {time.time() - substart}"); substart = time.time()
-
                 optimizer.zero_grad()
-                dF, rise, decay = model(twoDseq)
+                dF, rise, decay = model(input)
                 # print(f"model time: {time.time() - substart}"); substart = time.time()
 
                 loss1 = loss_fn1(dF, metadata['dF'])
