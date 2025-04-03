@@ -8,7 +8,7 @@ import torchsummary
 
 import os
 
-from HilbertClassifier2D import HilbertClassifier2D
+from Fluorescence1D import Fluorescence1D
 from utils import *
 from train_model import *
 
@@ -16,14 +16,14 @@ BATCH_SIZE = 64
 EPOCH_NUM = 10
 
 
-def run_2d_model():
+def run_1desm_model():
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     print("loading data...")
     
     training_data = CustomSequenceDataset(saved_dataloader="data/dataloader_dict1000.pth", dimensions=3)
-    # training_data = CustomSequenceDataset(dimensions=3, range=1000)
+    # training_data = CustomSequenceDataset(dimensions=3, range=2000)
     train_dataloader = DataLoader(training_data, batch_size=BATCH_SIZE, shuffle=True)
 
     print("started main at: " + getNowString())
@@ -34,14 +34,14 @@ def run_2d_model():
     
     if not now:
         now = getNowString()
-        model=HilbertClassifier2D().to(device)
+        model=Fluorescence1D(1280).to(device)
 
         #initialize weights and torchsummary
         _, seqdict = next(enumerate(train_dataloader))
-        tempsequence = seqdict['hilbert_seqlist']
+        tempsequence = seqdict['esm_seqlist']
         tempsequence = tempsequence.to(device)
-        model(tempsequence)
-        torchsummary.summary(model, (1, 32, 32))
+        model(tempsequence.permute(0,2,1))
+        torchsummary.summary(model, (1280, 450), depth=10)
 
         print("training " + f"models/{model.__class__.__name__}_weights_{now}.pth")
         testModel, logs = train_model(model = model,
@@ -50,7 +50,7 @@ def run_2d_model():
                         save_int=500, 
                         save_pth=f"models/{model.__class__.__name__}_weights_{now}.pth",
                         train_data=train_dataloader,
-                        dimensions='2D',
+                        dimensions='1DESM',
                         device=device
                         )
         f = open(f"models/{testModel.__class__.__name__}_structure_{now}.txt", "w")
@@ -68,7 +68,7 @@ def run_2d_model():
             torchsummary.summary(testModel, (1, 32, 32))
         else:
             # TODO DELETE THESE
-            testModel = HilbertClassifier2D().to(device=device)
+            testModel = Fluorescence1D().to(device=device)
             print("loading " + f"models/{testModel.__class__.__name__}_weights_{now}.pth")
             checkpoint = torch.load(f"models/{testModel.__class__.__name__}_weights_{now}.pth", weights_only=True)
             testModel.load_state_dict(checkpoint['model_state_dict'])
@@ -76,4 +76,4 @@ def run_2d_model():
     testModel.eval()
 
 if __name__ == "__main__":
-    run_2d_model()
+    run_1desm_model()

@@ -8,7 +8,7 @@ import torchsummary
 
 import os
 
-from models import *
+from HilbertClassifier3D import HilbertClassifier3D
 from utils import *
 from train_model import *
 
@@ -16,14 +16,14 @@ BATCH_SIZE = 64
 EPOCH_NUM = 10
 
 
-if __name__ == "__main__":
+def run_3d_model():
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     print("loading data...")
     
-    # training_data = CustomSequenceDataset(saved_dataloader="data/dataloader_dict.pth")
-    training_data = CustomSequenceDataset(dimensions=3)
+    training_data = CustomSequenceDataset(saved_dataloader="data/dataloader_dict1000.pth")
+    # training_data = CustomSequenceDataset(dimensions=3)
     train_dataloader = DataLoader(training_data, batch_size=BATCH_SIZE, shuffle=True)
 
     print("started main at: " + getNowString())
@@ -34,13 +34,14 @@ if __name__ == "__main__":
     
     if not now:
         now = getNowString()
-        model=HilbertClassifier().to(device)
+        model=HilbertClassifier3D().to(device)
 
         #initialize weights and torchsummary
-        _, (_, _, tempsequence, _) = next(enumerate(train_dataloader))
-        tempsequence = tempsequence.to(device)
+        _, seqdict = next(enumerate(train_dataloader))
+        tempsequence = seqdict['esm_hilbert_seqlist']
+        tempsequence = tempsequence.to(device).unsqueeze(1)
         model(tempsequence)
-        torchsummary.summary(model, (1280, 32, 32))
+        torchsummary.summary(model, (1, 1280, 32, 32))
 
         print("training " + f"models/{model.__class__.__name__}_weights_{now}.pth")
         testModel, logs = train_model(model = model,
@@ -67,9 +68,12 @@ if __name__ == "__main__":
             torchsummary.summary(testModel, (1, 32, 32))
         else:
             # TODO DELETE THESE
-            testModel = HilbertClassifier().to(device=device)
+            testModel = HilbertClassifier3D().to(device=device)
             print("loading " + f"models/{testModel.__class__.__name__}_weights_{now}.pth")
             checkpoint = torch.load(f"models/{testModel.__class__.__name__}_weights_{now}.pth", weights_only=True)
             testModel.load_state_dict(checkpoint['model_state_dict'])
 
     testModel.eval()
+
+if __name__ == "__main__":
+    run_3d_model()

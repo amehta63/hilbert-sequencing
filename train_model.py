@@ -4,11 +4,12 @@ import torch.optim as optim
 
 import time
 
-from models import *
+from HilbertClassifier2D import HilbertClassifier2D
+from ESMgenerator import ESMgenerator
 from utils import *
 
 
-def train_model(model = HilbertClassifier(),
+def train_model(model = HilbertClassifier2D(),
     epochs=1,
     train_data=None,
     dimensions='2D',
@@ -33,13 +34,15 @@ def train_model(model = HilbertClassifier(),
     
     for epoch in range(epochs):
         model.train()
-        for index, (sequence, twoDseq, threeDseq, metadata) in enumerate(train_data):
+        for index, seqdict in enumerate(train_data):
             # print(f"for loop time: {time.time() - substart}"); substart = time.time()
-            sequence = sequence.to(device)
-            if dimensions == '2D': input = twoDseq.to(device)
-            if dimensions == '3D': input = threeDseq.to(device)
-            for md in metadata.keys():
-                metadata[md] = metadata[md].to(device)
+            if dimensions == '1D': input = seqdict['seqlist'].to(device).unsqueeze(1)
+            if dimensions == '1DESM': input = seqdict['esm_seqlist'].permute(0,2,1).to(device)
+            if dimensions == '2D': input = seqdict['hilbert_seqlist'].to(device)
+            if dimensions == '3D': input = seqdict['esm_hilbert_seqlist'].to(device).unsqueeze(1)
+            metadata = {}
+            for md in ['id', 'variant', 'set', 'date', 'plate', 'well', 'mCherry', 'nAP', 'f0', 'dF', 'rise', 'decay']:
+                metadata[md] = seqdict[md].to(device)
 
             with torch.set_grad_enabled(True):
 
@@ -65,10 +68,10 @@ def train_model(model = HilbertClassifier(),
 
             if log_int is not None:
                 if not index % log_int:
-                    if print_logs: print(f"Epoch: {epoch}, Batch: {index}/{len(train_data)}, Loss: {loss1:.2f} dF + {loss2:.2f} rise + {loss3:.2f} decay = {loss:.2f}, time: {time.time() - start:.2f}s")
+                    if print_logs: print(f"Epoch: {epoch}, Batch: {index}/{len(train_data)}, Loss: {loss1:.3f} dF + {loss2:.3f} rise + {loss3:.3f} decay = {loss:.3f}, time: {time.time() - start:.3f}s")
                     start = time.time()
                 
-    print(f"Total time: {time.time() - base:.2f}s")
+    print(f"Total time: {time.time() - base:.3f}s")
     save_model(model, save_pth, epoch, index, loss)
     
     return model, logs

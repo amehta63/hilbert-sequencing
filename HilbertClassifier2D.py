@@ -4,13 +4,12 @@ from utils import *
 # Calculate output of conv: [(input - kernel + 2*padding0)/stride1]+1
 # Calculate output of conv': stride1*(input-1)+kernel-2*padding0 (literally the inverse lol)
 
-class HilbertClassifier(nn.Module):
+class HilbertClassifier2D(nn.Module):
     def __init__(self, return_labels=False):
         super().__init__()
         self.return_labels = return_labels
 
         self.preClassifier = nn.Sequential(
-            nn.LazyConv2d(1, 3, 1, 1),
             self.classifyingConvSeq(1, 32),     # ((32-3+2*1)/1)+1 = 32, 32->16 
             self.classifyingConvSeq(32, 64),    # ((16-3+2*1)/1)+1 = 16, 16->8 
             #self.classifyingConvSeq(64, 128),   # ((8-3+2*1)/1)+1 = 8, 8->4
