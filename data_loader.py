@@ -20,7 +20,7 @@ class CustomSequenceDataset(Dataset):
         __len__(): returns number of sequences in dataset.
         __getitem__(idx): gets sequence and metadata at idx.
     """
-    def __init__(self, data_file='data/train_gcamp3+6+8_90_well_mean_metrics_flattened.npz', sequence_length=450, saved_dataloader=None, dimensions=2, range=100):
+    def __init__(self, data_file='data/train_gcamp3+6+8_90_well_mean_metrics_flattened.npz', sequence_length=450, saved_dataloader=None, dimensions=2, range=100, nAP_cond = None):
         
         try:
             dataloader_dict = torch.load(saved_dataloader, weights_only=True)
@@ -35,6 +35,7 @@ class CustomSequenceDataset(Dataset):
             missingidx = np.isnan(self.data['dF'])
             missingidx = np.logical_or(missingidx, np.isnan(self.data['rise']))
             missingidx = np.logical_or(missingidx, np.isnan(self.data['decay']))
+            if nAP_cond: missingidx = np.logical_or(missingidx, np.not_equal(self.data['nAP'], nAP_cond))
             self.missingidx = missingidx
 
             for i in self.data:
