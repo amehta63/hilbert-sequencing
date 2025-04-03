@@ -16,7 +16,7 @@ BATCH_SIZE = 64
 EPOCH_NUM = 10
 
 
-def run_2d_model(dataset = "data/dataloader_dict100.pth"):
+def run_2d_model(dataset = "data/dataloader_dict100.pth", batch_size=BATCH_SIZE, epochs=EPOCH_NUM):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -24,7 +24,7 @@ def run_2d_model(dataset = "data/dataloader_dict100.pth"):
     
     training_data = CustomSequenceDataset(saved_dataloader=dataset)
     # training_data = CustomSequenceDataset(dimensions=3, range=1000)
-    train_dataloader = DataLoader(training_data, batch_size=BATCH_SIZE, shuffle=True)
+    train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
 
     print("started main at: " + getNowString())
     
@@ -46,7 +46,7 @@ def run_2d_model(dataset = "data/dataloader_dict100.pth"):
         print("training " + f"models/{model.__class__.__name__}_weights_{now}.pth")
         testModel, logs = train_model(model = model,
                         log_int=100, 
-                        epochs=EPOCH_NUM, 
+                        epochs=epochs, 
                         save_int=500, 
                         save_pth=f"models/{model.__class__.__name__}_weights_{now}.pth",
                         train_data=train_dataloader,
