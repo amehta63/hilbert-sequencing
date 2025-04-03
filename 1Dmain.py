@@ -16,13 +16,13 @@ BATCH_SIZE = 64
 EPOCH_NUM = 10
 
 
-def run_1d_model():
+def run_1d_model(dataset = "data/dataloader_dict100.pth"):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     print("loading data...")
     
-    training_data = CustomSequenceDataset(saved_dataloader="data/dataloader_dict1000.pth", dimensions=3)
+    training_data = CustomSequenceDataset(saved_dataloader=dataset)
     # training_data = CustomSequenceDataset(dimensions=3, range=2000)
     train_dataloader = DataLoader(training_data, batch_size=BATCH_SIZE, shuffle=True)
 

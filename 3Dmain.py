@@ -12,17 +12,17 @@ from HilbertClassifier3D import HilbertClassifier3D
 from utils import *
 from train_model import *
 
-BATCH_SIZE = 64
+BATCH_SIZE = 5
 EPOCH_NUM = 10
 
 
-def run_3d_model():
+def run_3d_model(dataset = "data/dataloader_dict100.pth"):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     print("loading data...")
     
-    training_data = CustomSequenceDataset(saved_dataloader="data/dataloader_dict1000.pth")
+    training_data = CustomSequenceDataset(saved_dataloader=dataset)
     # training_data = CustomSequenceDataset(dimensions=3)
     train_dataloader = DataLoader(training_data, batch_size=BATCH_SIZE, shuffle=True)
 
