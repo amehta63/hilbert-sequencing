@@ -88,7 +88,7 @@ def hilbertCurve2Dto3D(x, dim=0):
     y = y.reshape(2**p, 2**p, *all_but_first_dim)
     for point, dist in zip(points, distances):
         if dist < len(x): y[point[0], point[1], :] = x[dist, :]
-        else: y[point[0], point[1], :] = torch.zeros_like(x[0, :])
+        else: y[point[0], point[1], :] = torch.zeros_like(x[0, :]).half()
     return y
 
 def save_model(model=None, save_pth=None, epoch=None, index=None, loss=None):

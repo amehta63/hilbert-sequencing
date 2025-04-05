@@ -78,12 +78,12 @@ class CustomSequenceDataset(Dataset):
         rawsequences = self.datadict['sequence'][0:range]
         for file in self.datadict.keys():
             if file == 'variant':
-                metadata[file] = torch.FloatTensor(np.asarray(self.datadict[file], dtype=float)).squeeze().unsqueeze(1)
+                metadata[file] = torch.FloatTensor(np.asarray(self.datadict[file], dtype=float)).half().squeeze().unsqueeze(1)
             elif file == 'sequence':
                 for seq in self.datadict[file][0:range]:
-                    seqlist.append(functional.pad(torch.FloatTensor([ord(x) for x in seq]), pad=(0, self.sequence_length-len(seq))).squeeze().unsqueeze(1))
+                    seqlist.append(functional.pad(torch.FloatTensor([ord(x) for x in seq]).half(), pad=(0, self.sequence_length-len(seq))).squeeze().unsqueeze(1))
             else:
-                metadata[file] = torch.FloatTensor(self.datadict[file]).squeeze().unsqueeze(1)
+                metadata[file] = torch.FloatTensor(self.datadict[file]).half().squeeze().unsqueeze(1)
         seqlist = torch.hstack(seqlist).T
         print(f"Shape of sequence data and metadata: rawsequences: {type(rawsequences)} of {type(rawsequences[0])} len {len(rawsequences)}, metadata: {type(metadata)} len {len(metadata)}, seqlist: {seqlist.shape}")
         return rawsequences, metadata, seqlist
@@ -93,7 +93,7 @@ class CustomSequenceDataset(Dataset):
         # self.esm_seqlist = self.gen.listOfResidueEmbed(self.rawsequences, layer=33)
         esm_seqlist = []
         for seq in tqdm(self.rawsequences):
-            residue_embedding = self.gen.residueEmbed(seq, layer=33).unsqueeze(0)
+            residue_embedding = self.gen.residueEmbed(seq, layer=33).half().unsqueeze(0)
             esm_seqlist.append(residue_embedding)
         esm_seqlist =  torch.cat(esm_seqlist, dim=0)
         # esm_seqlist = self.gen.rawListOfResidueEmbed(self.rawsequences[0:range]) # not actually faster, >2x slower
@@ -122,7 +122,7 @@ class CustomSequenceDataset(Dataset):
         dataloader_dict['p'] = self.p
         dataloader_dict['dimensions'] = self.dimensions
         # dataloader_dict['data'] = self.data
-        dataloader_dict['missingidx'] = torch.from_numpy(self.missingidx)
+        dataloader_dict['missingidx'] = torch.from_numpy(self.missingidx).half()
         # dataloader_dict['datadict'] = self.datadict
         # dataloader_dict['rawsequences'] = self.rawsequences
         dataloader_dict['metadata'] = self.metadata
@@ -159,11 +159,11 @@ class CustomSequenceDataset(Dataset):
     def __getitem__(self, idx):
         returndict = { # TODO fix these names
             'raw_seqlist': self.rawsequences[idx], 
-            'seqlist': self.seqlist[idx], 
-            'esm_seqlist': self.esm_seqlist[idx],
-            'hilbert_seqlist': self.hilbert_seqlist[idx], 
-            'esm_hilbert_seqlist': self.esm_hilbert_seqlist[idx]
+            'seqlist': self.seqlist[idx].float(), 
+            'esm_seqlist': self.esm_seqlist[idx].float(),
+            'hilbert_seqlist': self.hilbert_seqlist[idx].float(), 
+            'esm_hilbert_seqlist': self.esm_hilbert_seqlist[idx].float()
         }
         for k,v in self.metadata.items():
-            returndict[k] = v[idx] 
+            returndict[k] = v[idx].float()
         return returndict

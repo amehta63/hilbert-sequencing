@@ -1,6 +1,5 @@
 import torch
 import esm
-import tqdm
 
 class ESMgenerator():
     """
