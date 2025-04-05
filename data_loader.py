@@ -42,7 +42,7 @@ class CustomSequenceDataset(Dataset):
 
             if self.dimensions > 2:
                 self.gen = ESMgenerator()
-                self.esm_seqlist = self.gen_esm_seq_list()
+                self.esm_seqlist = self.gen_esm_seq_list(range)
             
             self.hilbert_seqlist = self.gen_hilbert_seq_list(range)
 
@@ -88,7 +88,7 @@ class CustomSequenceDataset(Dataset):
         print(f"Shape of sequence data and metadata: rawsequences: {type(rawsequences)} of {type(rawsequences[0])} len {len(rawsequences)}, metadata: {type(metadata)} len {len(metadata)}, seqlist: {seqlist.shape}")
         return rawsequences, metadata, seqlist
 
-    def gen_esm_seq_list(self): # requires self.rawsequences and self.gen
+    def gen_esm_seq_list(self, range): # requires self.rawsequences and self.gen
         print("Generating ESM seq list, no curve...")
         # self.esm_seqlist = self.gen.listOfResidueEmbed(self.rawsequences, layer=33)
         esm_seqlist = []
@@ -96,28 +96,21 @@ class CustomSequenceDataset(Dataset):
             residue_embedding = self.gen.residueEmbed(seq, layer=33).unsqueeze(0)
             esm_seqlist.append(residue_embedding)
         esm_seqlist =  torch.cat(esm_seqlist, dim=0)
+        # esm_seqlist = self.gen.rawListOfResidueEmbed(self.rawsequences[0:range]) # not actually faster, >2x slower
         print(f"Shape of ESM seq list: {esm_seqlist.shape}")
         return esm_seqlist
 
     def gen_hilbert_seq_list(self, range): # requires self.p, self.sequence_length, and self.seqlist
         print("Generating Hilbert curved sequences...")
-        hilbert_seqlist = []
-        for seq in tqdm(self.seqlist[0:range]):
-            sequence = functional.pad(seq, (0, 2**(2*self.p)-self.sequence_length)) # make them all the same length
-            twoDseq = hilbertCurve1Dto2D(sequence).squeeze() # make them into pxp matricies
-            # twoDseq = twoDseq.reshape(-1, 2**self.p, 2**self.p) # make them 1xpxp tensors TODO: this should be unsqueeze
-            twoDseq = twoDseq.unsqueeze(0)
-            hilbert_seqlist.append(twoDseq)
-        hilbert_seqlist = torch.cat(hilbert_seqlist, dim=0).unsqueeze(1)
+        hilbert_seqlist = hilbertCurveAnyD(self.seqlist[0:range].unsqueeze(2), dim=1, pad=0)
+        hilbert_seqlist = hilbert_seqlist.squeeze().unsqueeze(1)
         print(f"Shape of Hilbert curved sequences: {hilbert_seqlist.shape}")
         return hilbert_seqlist
 
-    def gen_esm_hilbert_seq_list(self, range): # requires self.gen, self.datadict
+    def gen_esm_hilbert_seq_list(self, range): # requires self.esm_seqlist
         esm_hilbert_seqlist = []
         print("Generating Hilbert curved ESM sequences...")
-        for seq in tqdm(self.datadict['sequence'][0:range]):
-            esm_hilbert_seqlist.append(hilbertCurve2Dto3D(self.gen.residueEmbed(seq)).unsqueeze(0))
-        esm_hilbert_seqlist = torch.cat(esm_hilbert_seqlist, dim=0).permute(0, 3, 1, 2)
+        esm_hilbert_seqlist = hilbertCurveAnyD(self.esm_seqlist, dim=1, pad=0).permute(0, 3, 1, 2)
         print(f"Shape of Hilbert curved ESM sequences: {esm_hilbert_seqlist.shape}")
         return esm_hilbert_seqlist
     
