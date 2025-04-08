@@ -5,6 +5,7 @@ import torch.nn.functional as functional
 from utils import *
 from ESMgenerator import ESMgenerator
 from tqdm import tqdm
+import time
 
 class CustomSequenceDataset(Dataset):
     """
@@ -19,7 +20,7 @@ class CustomSequenceDataset(Dataset):
         __len__(): returns number of sequences in dataset.
         __getitem__(idx): gets sequence and metadata at idx.
     """
-    def __init__(self, data_file='data/train_gcamp3+6+8_90_well_mean_metrics_flattened.npz', sequence_length=450, saved_dataloader=None, dimensions=2, range=100, nAP_cond = None):
+    def __init__(self, data_file='data/train_gcamp3+6+8_90_well_mean_metrics_flattened.npz', sequence_length=450, saved_dataloader=None, dimensions=2, datarange=100, nAP_cond = None):
         
         try:
             dataloader_dict = torch.load(saved_dataloader, weights_only=True)
@@ -28,7 +29,7 @@ class CustomSequenceDataset(Dataset):
                 raise e
             print("No existing dataset passed, loading full dataset. This will take up to 20 minutes for 2D and 5 hours for 3D.")
             
-            self.range = range
+            self.datarange = datarange
             self.sequence_length = sequence_length
             self.p = (int(np.ceil(np.sqrt(self.sequence_length)))-1).bit_length()
             self.dimensions = dimensions
@@ -38,19 +39,19 @@ class CustomSequenceDataset(Dataset):
             
             self.metadata = {}
             self.seqlist = []
-            self.rawsequences, self.metadata, self.seqlist = self.gen_seq_and_metadata(range)
+            self.rawsequences, self.metadata, self.seqlist = self.gen_seq_and_metadata(datarange)
 
             if self.dimensions > 2:
                 self.gen = ESMgenerator()
-                self.esm_seqlist = self.gen_esm_seq_list(range)
+                self.esm_seqlist = self.gen_esm_seq_list(datarange)
             
-            self.hilbert_seqlist = self.gen_hilbert_seq_list(range)
+            self.hilbert_seqlist = self.gen_hilbert_seq_list(datarange)
 
-            if self.dimensions > 2: self.esm_hilbert_seqlist = self.gen_esm_hilbert_seq_list(range)
+            if self.dimensions > 2: self.esm_hilbert_seqlist = self.gen_esm_hilbert_seq_list(datarange)
             else: self.esm_hilbert_seqlist = self.hilbert_seqlist
 
-            if range is None: range = "no_range"
-            self.save_dataloader_dict(range)
+            if datarange is None: datarange = "no_range"
+            self.save_dataloader_dict(datarange)
 
         else:
             self.load_dataloader_dict(data_file, dataloader_dict)
@@ -70,17 +71,17 @@ class CustomSequenceDataset(Dataset):
             datadict[i] = self.data[i][~missingidx]
         return missingidx, datadict
     
-    def gen_seq_and_metadata(self, range): # requires both self.datadict and self.sequence_length
+    def gen_seq_and_metadata(self, datarange): # requires both self.datadict and self.sequence_length
         rawsequences = []
         metadata = {}
         seqlist = []
         print("Generating sequence data and metadata...")
-        rawsequences = self.datadict['sequence'][0:range]
+        rawsequences = self.datadict['sequence'][0:datarange]
         for file in self.datadict.keys():
             if file == 'variant':
                 metadata[file] = torch.FloatTensor(np.asarray(self.datadict[file], dtype=float)).half().squeeze().unsqueeze(1)
             elif file == 'sequence':
-                for seq in self.datadict[file][0:range]:
+                for seq in self.datadict[file][0:datarange]:
                     seqlist.append(functional.pad(torch.FloatTensor([ord(x) for x in seq]).half(), pad=(0, self.sequence_length-len(seq))).squeeze().unsqueeze(1))
             else:
                 metadata[file] = torch.FloatTensor(self.datadict[file]).half().squeeze().unsqueeze(1)
@@ -88,36 +89,54 @@ class CustomSequenceDataset(Dataset):
         print(f"Shape of sequence data and metadata: rawsequences: {type(rawsequences)} of {type(rawsequences[0])} len {len(rawsequences)}, metadata: {type(metadata)} len {len(metadata)}, seqlist: {seqlist.shape}")
         return rawsequences, metadata, seqlist
 
-    def gen_esm_seq_list(self, range): # requires self.rawsequences and self.gen
+    def gen_esm_seq_list(self, datarange): # requires self.rawsequences and self.gen
         print("Generating ESM seq list, no curve...")
-        # self.esm_seqlist = self.gen.listOfResidueEmbed(self.rawsequences, layer=33)
+        start = time.time()
+        self.esm_seqlist = self.gen.listOfResidueEmbed(self.rawsequences, layer=33)
+        print(f"time for looped esm seq with subroutine: {time.time() - start}")
+        start = time.time()
         esm_seqlist = []
         for seq in tqdm(self.rawsequences):
             residue_embedding = self.gen.residueEmbed(seq, layer=33).half().unsqueeze(0)
             esm_seqlist.append(residue_embedding)
-        esm_seqlist =  torch.cat(esm_seqlist, dim=0)
-        # esm_seqlist = self.gen.rawListOfResidueEmbed(self.rawsequences[0:range]) # not actually faster, >2x slower
+        esm_seqlist =  torch.cat(esm_seqlist, dim=0) 
+        print(f"time for looped esm seq: {time.time() - start}")
+        start = time.time()
+        esm_seqlist2 = []
+        for i in tqdm(range(50)):
+            esm_seqlist2.append(self.gen.rawListOfResidueEmbed(self.rawsequences[2*i:2*i+1])) # not actually faster, >2x slower
+        esm_seqlist2 =  torch.cat(esm_seqlist2, dim=0)
+        print(f"time for batch size 2 esm seq: {time.time() - start}")
+        start = time.time()
+        esm_seqlist2 = []
+        for i in tqdm(range(10)):
+            esm_seqlist2.append(self.gen.rawListOfResidueEmbed(self.rawsequences[10*i:10*i+9])) # not actually faster, >2x slower
+        esm_seqlist2 =  torch.cat(esm_seqlist2, dim=0)
+        print(f"time for batch size 10 esm seq: {time.time() - start}")
+        start = time.time()
+        esm_seqlist2 = self.gen.rawListOfResidueEmbed(self.rawsequences) # not actually faster, >2x slower
+        print(f"time for full set esm seq: {time.time() - start}")
         print(f"Shape of ESM seq list: {esm_seqlist.shape}")
         return esm_seqlist
 
-    def gen_hilbert_seq_list(self, range): # requires self.p, self.sequence_length, and self.seqlist
+    def gen_hilbert_seq_list(self, datarange): # requires self.p, self.sequence_length, and self.seqlist
         print("Generating Hilbert curved sequences...")
-        hilbert_seqlist = hilbertCurveAnyD(self.seqlist[0:range].unsqueeze(2), dim=1, pad=0)
+        hilbert_seqlist = hilbertCurveAnyD(self.seqlist[0:datarange].unsqueeze(2), dim=1, pad=0)
         hilbert_seqlist = hilbert_seqlist.squeeze().unsqueeze(1)
         print(f"Shape of Hilbert curved sequences: {hilbert_seqlist.shape}")
         return hilbert_seqlist
 
-    def gen_esm_hilbert_seq_list(self, range): # requires self.esm_seqlist
+    def gen_esm_hilbert_seq_list(self, datarange): # requires self.esm_seqlist
         esm_hilbert_seqlist = []
         print("Generating Hilbert curved ESM sequences...")
         esm_hilbert_seqlist = hilbertCurveAnyD(self.esm_seqlist, dim=1, pad=0).permute(0, 3, 1, 2)
         print(f"Shape of Hilbert curved ESM sequences: {esm_hilbert_seqlist.shape}")
         return esm_hilbert_seqlist
     
-    def save_dataloader_dict(self, name=range): # depends on everything
+    def save_dataloader_dict(self, name='no_range'): # depends on everything
         print("saving dataloader dict")
         dataloader_dict = {}
-        dataloader_dict['range'] = self.range
+        dataloader_dict['datarange'] = self.datarange
         dataloader_dict['sequence_length'] = self.sequence_length
         dataloader_dict['p'] = self.p
         dataloader_dict['dimensions'] = self.dimensions
@@ -137,14 +156,14 @@ class CustomSequenceDataset(Dataset):
     def load_dataloader_dict(self, data_file, dataloader_dict):
         print("loader dataloader dict")
         self.data                   = np.load(data_file)
-        self.range                  = dataloader_dict['range']
+        self.datarange                  = dataloader_dict['datarange']
         self.sequence_length        = dataloader_dict['sequence_length']
         self.p                      = dataloader_dict['p']
         self.dimensions             = dataloader_dict['dimensions']
         # self.data                 = dataloader_dict['data']
         self.missingidx             = dataloader_dict['missingidx']
         self.datadict               = self.remove_nans_and_cond(missingidx=self.missingidx)[1] # TODO do something about this ## dataloader_dict['datadict']
-        self.rawsequences           = self.datadict['sequence'][0:self.range]
+        self.rawsequences           = self.datadict['sequence'][0:self.datarange]
         self.metadata               = dataloader_dict['metadata']
         self.seqlist                = dataloader_dict['seqlist']
         self.gen                    = None if self.dimensions <3 else ESMgenerator()
@@ -154,7 +173,7 @@ class CustomSequenceDataset(Dataset):
         print("dataloader dict loaded")
 
     def __len__(self):
-        return self.range #len(self.hilbert_seqlist)
+        return self.datarange #len(self.hilbert_seqlist)
 
     def __getitem__(self, idx):
         returndict = { # TODO fix these names

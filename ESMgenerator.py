@@ -44,6 +44,16 @@ class ESMgenerator():
             seqlist.append(residue_embedding)
         return torch.cat(seqlist, dim=0)
     
+    def rawListOfResidueEmbed(self, rawSequenceList, layer=33):
+        data = []
+        for i,v in enumerate(rawSequenceList):
+            data.append((f"protein{i}", v))
+        batch_labels, batch_strs, batch_tokens = self.batch_converter(data)
+        with torch.no_grad():
+            full_output = self.model(batch_tokens, repr_layers=[layer], return_contacts=True) 
+        token_representations = full_output["representations"][layer]
+        return token_representations[:,1:-1,:]
+    
     def residueEmbedfromOrd(self, sequenceList, layer=33): # this is insanely slow, please do not use
         seqlist = []
         for seq in sequenceList:
