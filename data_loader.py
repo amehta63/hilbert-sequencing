@@ -79,43 +79,22 @@ class CustomSequenceDataset(Dataset):
         rawsequences = self.datadict['sequence'][0:datarange]
         for file in self.datadict.keys():
             if file == 'variant':
-                metadata[file] = torch.FloatTensor(np.asarray(self.datadict[file], dtype=float)).half().squeeze().unsqueeze(1)
+                metadata[file] = torch.FloatTensor(np.asarray(self.datadict[file], dtype=float)).bfloat16().squeeze().unsqueeze(1)
             elif file == 'sequence':
                 for seq in self.datadict[file][0:datarange]:
-                    seqlist.append(functional.pad(torch.FloatTensor([ord(x) for x in seq]).half(), pad=(0, self.sequence_length-len(seq))).squeeze().unsqueeze(1))
+                    seqlist.append(functional.pad(torch.FloatTensor([ord(x) for x in seq]).bfloat16(), pad=(0, self.sequence_length-len(seq))).squeeze().unsqueeze(1))
             else:
-                metadata[file] = torch.FloatTensor(self.datadict[file]).half().squeeze().unsqueeze(1)
+                metadata[file] = torch.FloatTensor(self.datadict[file]).bfloat16().squeeze().unsqueeze(1)
         seqlist = torch.hstack(seqlist).T
         print(f"Shape of sequence data and metadata: rawsequences: {type(rawsequences)} of {type(rawsequences[0])} len {len(rawsequences)}, metadata: {type(metadata)} len {len(metadata)}, seqlist: {seqlist.shape}")
         return rawsequences, metadata, seqlist
 
     def gen_esm_seq_list(self, datarange): # requires self.rawsequences and self.gen
+        # Not actually sure why the 2-protein batch size works so well in ESM, might be related: https://arxiv.org/html/2501.07747v1
+        # Generating ESM embeddings: 1 seq at a time takes 1.5s ea, 2 seq 1.5s ea, 4 seq 2.4s, 5 seq 2.8s, 10 seq 3.4s
         print("Generating ESM seq list, no curve...")
-        start = time.time()
-        self.esm_seqlist = self.gen.listOfResidueEmbed(self.rawsequences, layer=33)
-        print(f"time for looped esm seq with subroutine: {time.time() - start}")
-        start = time.time()
-        esm_seqlist = []
-        for seq in tqdm(self.rawsequences):
-            residue_embedding = self.gen.residueEmbed(seq, layer=33).half().unsqueeze(0)
-            esm_seqlist.append(residue_embedding)
-        esm_seqlist =  torch.cat(esm_seqlist, dim=0) 
-        print(f"time for looped esm seq: {time.time() - start}")
-        start = time.time()
-        esm_seqlist2 = []
-        for i in tqdm(range(50)):
-            esm_seqlist2.append(self.gen.rawListOfResidueEmbed(self.rawsequences[2*i:2*i+1])) # not actually faster, >2x slower
-        esm_seqlist2 =  torch.cat(esm_seqlist2, dim=0)
-        print(f"time for batch size 2 esm seq: {time.time() - start}")
-        start = time.time()
-        esm_seqlist2 = []
-        for i in tqdm(range(10)):
-            esm_seqlist2.append(self.gen.rawListOfResidueEmbed(self.rawsequences[10*i:10*i+9])) # not actually faster, >2x slower
-        esm_seqlist2 =  torch.cat(esm_seqlist2, dim=0)
-        print(f"time for batch size 10 esm seq: {time.time() - start}")
-        start = time.time()
-        esm_seqlist2 = self.gen.rawListOfResidueEmbed(self.rawsequences) # not actually faster, >2x slower
-        print(f"time for full set esm seq: {time.time() - start}")
+        esm_seqlist = self.gen.listOfResidueEmbed(self.rawsequences, layer=33).bfloat16() # takes about as long as batch-2
+        # esm_seqlist = self.gen.rawListOfResidueEmbed(self.rawsequences) # the slowest option, takes more RAM than I have
         print(f"Shape of ESM seq list: {esm_seqlist.shape}")
         return esm_seqlist
 
@@ -141,7 +120,7 @@ class CustomSequenceDataset(Dataset):
         dataloader_dict['p'] = self.p
         dataloader_dict['dimensions'] = self.dimensions
         # dataloader_dict['data'] = self.data
-        dataloader_dict['missingidx'] = torch.from_numpy(self.missingidx).half()
+        dataloader_dict['missingidx'] = torch.from_numpy(self.missingidx).bfloat16()
         # dataloader_dict['datadict'] = self.datadict
         # dataloader_dict['rawsequences'] = self.rawsequences
         dataloader_dict['metadata'] = self.metadata
