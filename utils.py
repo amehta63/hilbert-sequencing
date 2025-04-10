@@ -3,6 +3,7 @@ import torch.nn.functional as functional
 import datetime
 from hilbertcurve.hilbertcurve import HilbertCurve
 import numpy as np
+from data_loader import CustomSequenceDataset
 
 def getNowString():
     return str(datetime.datetime.now().strftime("%Y%m%d%H%M"))
@@ -21,6 +22,7 @@ def hilbertIndexTensor(p=5):
 def hilbertCurveAnyD(x, dim=1, pad=0): #TODO make it actually anyD, right now it will only work for batch x sequence x embedding
     original_shape = x.shape
     p = (int(np.ceil(np.sqrt(x.shape[dim])))-1).bit_length() 
+    p = p if p else 1
     size = 2**(p)
     length = 2**(2*p)
     dims = [i for i in range(len(x.shape)) if i != dim]
@@ -46,6 +48,7 @@ def hilbertCurve1Dto2D(x, dim=0):
         raise ValueError('1Dto2D method recieved more than 1D input.')
     # calculate the minimum square side length that is a power of 2 that will hold all of the data
     p = (int(np.ceil(np.sqrt(len(x))))-1).bit_length() 
+    p = p if p else 1
     # 1D -> 2D means n=2
     n = 2
     hilbert_curve = HilbertCurve(p, n)
@@ -77,6 +80,7 @@ def hilbertCurve2Dto3D(x, dim=0):
         raise ValueError('2Dto3D method recieved non-2D input.')
     # calculate the minimum square side length that is a power of 2 that will hold all of the data
     p = (int(np.ceil(np.sqrt(len(x))))-1).bit_length() 
+    p = p if p else 1
     # 2D -> 3D on only one dimension means n=2
     n = 2
     hilbert_curve = HilbertCurve(p, n)
@@ -108,3 +112,12 @@ def save_model(model=None, save_pth=None, epoch=None, index=None, loss=None):
             #'optimizer_state_dict': optimizer.state_dict(),
             'loss': loss,
         }, save_pth)
+
+def load_all_data(data_file='data/train_gcamp3+6+8_90_well_mean_metrics_flattened.npz', increments=10, max_range_exp=6):
+
+    print("started loading at: " + getNowString())
+    print("loading data...")
+    
+    for i in range(max_range_exp):
+        training_data = CustomSequenceDataset(data_file=data_file, dimensions=3, datarange=increments**i, nAP_cond=10)
+        print(f"Loaded len {increments**i} data")

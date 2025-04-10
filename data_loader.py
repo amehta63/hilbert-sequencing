@@ -32,6 +32,7 @@ class CustomSequenceDataset(Dataset):
             self.datarange = datarange
             self.sequence_length = sequence_length
             self.p = (int(np.ceil(np.sqrt(self.sequence_length)))-1).bit_length()
+            self.p = self.p if self.p else 1
             self.dimensions = dimensions
             self.data = np.load(data_file)
 
@@ -89,12 +90,18 @@ class CustomSequenceDataset(Dataset):
         print(f"Shape of sequence data and metadata: rawsequences: {type(rawsequences)} of {type(rawsequences[0])} len {len(rawsequences)}, metadata: {type(metadata)} len {len(metadata)}, seqlist: {seqlist.shape}")
         return rawsequences, metadata, seqlist
 
-    def gen_esm_seq_list(self, datarange): # requires self.rawsequences and self.gen
+    def gen_esm_seq_list(self, datarange): # requires self.rawsequences, self.gen, self.datarange
         # Not actually sure why the 2-protein batch size works so well in ESM, might be related: https://arxiv.org/html/2501.07747v1
         # Generating ESM embeddings: 1 seq at a time takes 1.5s ea, 2 seq 1.5s ea, 4 seq 2.4s, 5 seq 2.8s, 10 seq 3.4s
-        print("Generating ESM seq list, no curve...")
-        esm_seqlist = self.gen.listOfResidueEmbed(self.rawsequences, layer=33).bfloat16() # takes about as long as batch-2
+        # esm_seqlist = self.gen.listOfResidueEmbed(self.rawsequences, layer=33) # takes about as long as batch-2
         # esm_seqlist = self.gen.rawListOfResidueEmbed(self.rawsequences) # the slowest option, takes more RAM than I have
+        print("Generating ESM seq list, no curve...")
+        esm_seqlist = []
+        for i in tqdm(range(int(self.datarange/2))): # decided to keep this even though its ugly code, the tqdm progress bar is nice
+            esm_seqlist.append(self.gen.rawListOfResidueEmbed(self.rawsequences[2*i:2*i+2]).bfloat16())
+        if self.datarange % 2:
+            esm_seqlist.append(self.gen.rawListOfResidueEmbed(self.rawsequences[-1]).bfloat16())
+        esm_seqlist =  torch.cat(esm_seqlist, dim=0).bfloat16()
         print(f"Shape of ESM seq list: {esm_seqlist.shape}")
         return esm_seqlist
 
