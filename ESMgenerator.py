@@ -33,14 +33,14 @@ class ESMgenerator():
         if isinstance(sequence, list):
             return self.listOfResidueEmbed(sequence, layer)
         token_representations = self.tokenEmbed(sequence, layer)["representations"][layer]
-        return token_representations[0, 1:len(sequence)+1]
+        return token_representations[0, 1:len(sequence)+1].unsqueeze(0)
     
     def listOfResidueEmbed(self, sequenceList, layer=33):
         if isinstance(sequenceList, str):
-            return self.residueEmbed(sequenceList, layer).unsqueeze(0)
+            return self.residueEmbed(sequenceList, layer)
         seqlist = []
         for seq in sequenceList:
-            residue_embedding = self.residueEmbed(seq, layer).unsqueeze(0)
+            residue_embedding = self.residueEmbed(seq, layer)
             seqlist.append(residue_embedding)
         return torch.cat(seqlist, dim=0)
     

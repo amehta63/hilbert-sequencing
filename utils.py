@@ -3,7 +3,7 @@ import torch.nn.functional as functional
 import datetime
 from hilbertcurve.hilbertcurve import HilbertCurve
 import numpy as np
-from data_loader import CustomSequenceDataset
+# from data_loader import CustomSequenceDataset
 
 def getNowString():
     return str(datetime.datetime.now().strftime("%Y%m%d%H%M"))
@@ -113,11 +113,11 @@ def save_model(model=None, save_pth=None, epoch=None, index=None, loss=None):
             'loss': loss,
         }, save_pth)
 
-def load_all_data(data_file='data/train_gcamp3+6+8_90_well_mean_metrics_flattened.npz', increments=10, max_range_exp=6):
+# def load_all_data(data_file='data/train_gcamp3+6+8_90_well_mean_metrics_flattened.npz', increments=10, max_range_exp=6):
 
-    print("started loading at: " + getNowString())
-    print("loading data...")
+#     print("started loading at: " + getNowString())
+#     print("loading data...")
     
-    for i in range(max_range_exp):
-        training_data = CustomSequenceDataset(data_file=data_file, dimensions=3, datarange=increments**i, nAP_cond=10)
-        print(f"Loaded len {increments**i} data")
+#     for i in range(max_range_exp):
+#         training_data = CustomSequenceDataset(data_file=data_file, dimensions=3, datarange=increments**i, nAP_cond=10)
+#         print(f"Loaded len {increments**i} data")
