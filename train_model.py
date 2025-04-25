@@ -36,10 +36,10 @@ def train_model(model = HilbertClassifier2D(),
         model.train()
         for index, seqdict in enumerate(train_data):
             # print(f"for loop time: {time.time() - substart}"); substart = time.time()
-            if dimensions == '1D': input = seqdict['seqlist'].to(device).unsqueeze(1)
-            if dimensions == '1DESM': input = seqdict['esm_seqlist'].permute(0,2,1).to(device)
-            if dimensions == '2D': input = seqdict['hilbert_seqlist'].to(device)
-            if dimensions == '3D': input = seqdict['esm_hilbert_seqlist'].to(device).unsqueeze(1)
+            if dimensions == '1D': input = seqdict['sequences'].to(device).unsqueeze(1)
+            if dimensions == '1DESM': input = seqdict['esm_sequences'].permute(0,2,1).to(device)
+            if dimensions == '2D': input = seqdict['hilbert_sequences'].to(device)
+            if dimensions == '3D': input = seqdict['esm_hilbert_sequences'].to(device).unsqueeze(1)
             metadata = {}
             for md in ['id', 'variant', 'set', 'date', 'plate', 'well', 'mCherry', 'nAP', 'f0', 'dF', 'rise', 'decay']:
                 metadata[md] = seqdict[md].to(device)

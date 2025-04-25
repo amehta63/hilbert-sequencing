@@ -7,3 +7,7 @@ Several tests will be run:
 - (maybe) A 1d convolution model on the sequence and ESM annotations (not implemented yet)
 - A 2d convolutional model on the sequence when fractally transformed into a 2d hilbert curve
 - A 3d convolutional model on the 2d sequence above, with a 3rd dimension for ESM annotations (not implemented yet)
+
+Some choices that were made:
+- The protein sequences come in two sizes: 450 and 422. The difference is mostly one 26 AA section at the begining of the sequence. I chose to fill this section with '-' in the shorter sequence. This should be interpreted as 'unk' in ESM, and is still given a vector and changes the embeddings for the other AAs. Unclear if this is the best decision or not.
+- AA to int embeddings used ord(single letter code). This should have no effect on learning.
