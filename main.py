@@ -9,6 +9,7 @@ from models import *
 from utils import *
 from train_model import *
 
+import sys
 import os
 os.makedirs("data", exist_ok=True)
 os.makedirs("checkpoints", exist_ok=True)
@@ -94,4 +95,9 @@ def run_model(modeltype = '1D', dataset = "data/dataloader_dict22104.pth", batch
     testModel.eval()
 
 if __name__ == "__main__":
-    run_model('1D', now = None)
+    modeltype = '1D'
+    if len(sys.argv) > 0:
+        modeltype = sys.argv[0]
+    if len(sys.argv) > 1:
+        raise ValueError("Too many arguments.")
+    run_model(modeltype, now = None)
