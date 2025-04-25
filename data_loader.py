@@ -189,10 +189,10 @@ class CustomSequenceDataset(Dataset):
     def __getitem__(self, idx):
         returndict = {
             'raw_sequences': self.rawsequences[idx], 
-            'sequences': self.seqdict[self.rawsequences[idx]].squeeze().float(), 
-            'esm_sequences': self.esm_seqdict[self.rawsequences[idx]].squeeze().float(),
+            'sequences': self.seqdict[self.rawsequences[idx]].squeeze().unsqueeze(0).float(), 
+            'esm_sequences': self.esm_seqdict[self.rawsequences[idx]].permute(0,2,1).squeeze().float(),
             'hilbert_sequences': self.hilbert_seqdict[self.rawsequences[idx]].squeeze().unsqueeze(0).float(), 
-            'esm_hilbert_sequences': self.esm_hilbert_seqdict[self.rawsequences[idx]].permute(0, 3, 1, 2).squeeze().float()
+            'esm_hilbert_sequences': self.esm_hilbert_seqdict[self.rawsequences[idx]].permute(0, 3, 1, 2).squeeze().unsqueeze(0).float()
         }
         for k,v in self.metadata.items():
             returndict[k] = v[idx].float()
