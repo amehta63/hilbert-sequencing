@@ -1,11 +1,9 @@
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-import torch.nn.functional as functional
 from utils import *
 from ESMgenerator import ESMgenerator
 from tqdm import tqdm
-import time
 
 class CustomSequenceDataset(Dataset):
     """
