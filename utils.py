@@ -3,10 +3,41 @@ import torch.nn.functional as functional
 import datetime
 from hilbertcurve.hilbertcurve import HilbertCurve
 import numpy as np
+# from data_loader import CustomSequenceDataset
 
 def getNowString():
     return str(datetime.datetime.now().strftime("%Y%m%d%H%M"))
 
+def hilbertIndexTensor(p=5):
+    size = 2**p
+    n = 2
+    hilbert_curve = HilbertCurve(p, n)
+    distances = list(range(size**2))
+    points = hilbert_curve.points_from_distances(distances)
+    indexes = torch.arange(2**(2*p)).view(size,size)
+    for i, point in enumerate(points):
+        indexes[point[0],point[1]] = i
+    return indexes
+
+def hilbertCurveAnyD(x, dim=1, pad=0): #TODO make it actually anyD, right now it will only work for batch x sequence x embedding
+    original_shape = x.shape
+    p = (int(np.ceil(np.sqrt(x.shape[dim])))-1).bit_length() 
+    p = p if p else 1
+    size = 2**(p)
+    length = 2**(2*p)
+    dims = [i for i in range(len(x.shape)) if i != dim]
+    dims.append(dim)
+    x = torch.permute(x, tuple(dims))
+    x = functional.pad(x, (pad, length-x.shape[-1]))
+    full_shape = x.shape
+    newdims = [i for i in range(len(x.shape))]
+    newdims.insert(dim, newdims.pop())
+    x = torch.permute(x, tuple(newdims))
+
+    indexes = hilbertIndexTensor(p=p).view(-1).expand(x.size(0), -1) #batch it up
+    hilbert_x = torch.gather(x, dim=dim, index=indexes.unsqueeze(-1).expand(-1, -1, x.size(2)))  # [64, 1024, 1280]
+    return hilbert_x.view(*full_shape[0:dim], size, size, *full_shape[dim:-1])
+    
 def hilbertCurve1Dto2D(x, dim=0):
     """
     This is actually the same as athe 2D to 3D version but due to the style of padding, it is size limited.
@@ -17,6 +48,7 @@ def hilbertCurve1Dto2D(x, dim=0):
         raise ValueError('1Dto2D method recieved more than 1D input.')
     # calculate the minimum square side length that is a power of 2 that will hold all of the data
     p = (int(np.ceil(np.sqrt(len(x))))-1).bit_length() 
+    p = p if p else 1
     # 1D -> 2D means n=2
     n = 2
     hilbert_curve = HilbertCurve(p, n)
@@ -48,6 +80,7 @@ def hilbertCurve2Dto3D(x, dim=0):
         raise ValueError('2Dto3D method recieved non-2D input.')
     # calculate the minimum square side length that is a power of 2 that will hold all of the data
     p = (int(np.ceil(np.sqrt(len(x))))-1).bit_length() 
+    p = p if p else 1
     # 2D -> 3D on only one dimension means n=2
     n = 2
     hilbert_curve = HilbertCurve(p, n)
@@ -59,7 +92,7 @@ def hilbertCurve2Dto3D(x, dim=0):
     y = y.reshape(2**p, 2**p, *all_but_first_dim)
     for point, dist in zip(points, distances):
         if dist < len(x): y[point[0], point[1], :] = x[dist, :]
-        else: y[point[0], point[1], :] = torch.zeros_like(x[0, :])
+        else: y[point[0], point[1], :] = torch.zeros_like(x[0, :]).bfloat16()
     return y
 
 def save_model(model=None, save_pth=None, epoch=None, index=None, loss=None):
@@ -79,3 +112,12 @@ def save_model(model=None, save_pth=None, epoch=None, index=None, loss=None):
             #'optimizer_state_dict': optimizer.state_dict(),
             'loss': loss,
         }, save_pth)
+
+# def load_all_data(data_file='data/train_gcamp3+6+8_90_well_mean_metrics_flattened.npz', increments=10, max_range_exp=6):
+
+#     print("started loading at: " + getNowString())
+#     print("loading data...")
+    
+#     for i in range(max_range_exp):
+#         training_data = CustomSequenceDataset(data_file=data_file, dimensions=3, datarange=increments**i, nAP_cond=10)
+#         print(f"Loaded len {increments**i} data")
