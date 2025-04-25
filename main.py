@@ -15,7 +15,7 @@ os.makedirs("data", exist_ok=True)
 os.makedirs("checkpoints", exist_ok=True)
 
 BATCH_SIZE = 64
-EPOCH_NUM = 1
+EPOCH_NUM = 10
 
 class modelSelector(): # if you think i need getters and setters, bite me.
     def __init__(self, modeltype):
@@ -96,8 +96,8 @@ def run_model(modeltype = '1D', dataset = "data/dataloader_dict22104.pth", batch
 
 if __name__ == "__main__":
     modeltype = '1D'
-    if len(sys.argv) > 0:
-        modeltype = sys.argv[0]
     if len(sys.argv) > 1:
+        modeltype = sys.argv[1]
+    if len(sys.argv) > 2:
         raise ValueError("Too many arguments.")
     run_model(modeltype, now = None)
