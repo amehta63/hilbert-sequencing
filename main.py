@@ -1,40 +1,39 @@
 import torch
 from torch.utils.data import DataLoader
-from torchvision import transforms
 
 from data_loader import CustomSequenceDataset
 
 import torchsummary
 
-import os
-
-from Fluorescence1D import Fluorescence1D
-from HilbertClassifier2D import HilbertClassifier2D
-from HilbertClassifier3D import HilbertClassifier3D
+from models import *
 from utils import *
 from train_model import *
 
+import os
+os.makedirs("data", exist_ok=True)
+os.makedirs("checkpoints", exist_ok=True)
+
 BATCH_SIZE = 64
-EPOCH_NUM = 10
+EPOCH_NUM = 1
 
 class modelSelector(): # if you think i need getters and setters, bite me.
     def __init__(self, modeltype):
         self.modeltype = modeltype
         match modeltype:
             case '1D':
-                self.model = Fluorescence1D()
+                self.model = Fluorescence1D.Fluorescence1D()
                 self.datashape = (1, 450)
                 self.datakey = 'sequences'
             case '1DESM':
-                self.model = Fluorescence1D(1280)
+                self.model = Fluorescence1D.Fluorescence1D(1280)
                 self.datashape = (1280, 450)
                 self.datakey = 'esm_sequences'
             case '2D':
-                self.model = HilbertClassifier2D()
+                self.model = HilbertClassifier2D.HilbertClassifier2D()
                 self.datashape = (1, 32, 32)
                 self.datakey = 'hilbert_sequences'
             case '3D':
-                self.model = HilbertClassifier3D()
+                self.model = HilbertClassifier3D.HilbertClassifier3D()
                 self.datashape = (1, 1280, 32, 32)
                 self.datakey = 'esm_hilbert_sequences'
             case _:
@@ -68,28 +67,28 @@ def run_model(modeltype = '1D', dataset = "data/dataloader_dict22104.pth", batch
         model(tempsequence)
         torchsummary.summary(model, model_selector.datashape, depth=10)
 
-        print("training " + f"models/{model.__class__.__name__}_weights_{now}.pth")
+        print("training " + f"checkpoints/{model.__class__.__name__}_weights_{now}.pth")
         testModel, logs = train_model(model = model,
                         log_int=100, 
                         epochs=epochs, 
                         save_int=500, 
-                        save_pth=f"models/{model.__class__.__name__}_weights_{now}.pth",
+                        save_pth=f"checkpoints/{model.__class__.__name__}_weights_{now}.pth",
                         train_data=train_dataloader,
                         dimensions=model_selector.modeltype,
                         device=device
                         )
-        f = open(f"models/{testModel.__class__.__name__}_structure_{now}.txt", "w")
+        f = open(f"checkpoints/{testModel.__class__.__name__}_structure_{now}.txt", "w")
         print(testModel, file=f)
         f.close()
-        save_model(model=testModel, save_pth=f"models/{testModel.__class__.__name__}_{name}_full_{now}.pth")
+        save_model(model=testModel, save_pth=f"checkpoints/{testModel.__class__.__name__}_{name}_full_{now}.pth")
     else:
-        model_files = [x for x in os.listdir("models/") if now in x]
+        model_files = [x for x in os.listdir("checkpoints/") if now in x]
         full_models = [x for x in model_files if "full" in x]
         part_models = [x for x in model_files if "weights" in x]
         if full_models: 
             if len(full_models) > 1: raise Exception("model number not unique")
-            print("loading " + "models/" + full_models[0])
-            testModel = torch.load("models/"+full_models[0], weights_only=False).to(device=device)
+            print("loading " + "checkpoints/" + full_models[0])
+            testModel = torch.load("checkpoints/"+full_models[0], weights_only=False).to(device=device)
             torchsummary.summary(testModel, model_selector.datashape)
 
     testModel.eval()

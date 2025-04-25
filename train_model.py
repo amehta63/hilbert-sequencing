@@ -3,19 +3,17 @@ import torch.nn.functional as functional
 import torch.optim as optim
 
 import time
-
-from HilbertClassifier2D import HilbertClassifier2D
-from ESMgenerator import ESMgenerator
+from models import *
 from utils import *
 
 
-def train_model(model = HilbertClassifier2D(),
+def train_model(model = HilbertClassifier2D.HilbertClassifier2D(),
     epochs=1,
     train_data=None,
     dimensions='2D',
     log_int=100,
     save_int=None,
-    save_pth=f"models/default_{datetime.datetime.now().strftime('%Y%m%d%H%M')}.pth",
+    save_pth=f"checkpoints/default_{datetime.datetime.now().strftime('%Y%m%d%H%M')}.pth",
     test_data=None,
     print_logs = True,
     device = 'cpu'
