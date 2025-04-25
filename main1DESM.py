@@ -16,14 +16,14 @@ BATCH_SIZE = 64
 EPOCH_NUM = 10
 
 
-def run_1desm_model(dataset = "data/dataloader_dict100.pth", batch_size=BATCH_SIZE, epochs=EPOCH_NUM):
+def run_1desm_model(dataset = "data/dataloader_dict22104.pth", batch_size=BATCH_SIZE, epochs=EPOCH_NUM):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     print("loading data...")
     
     training_data = CustomSequenceDataset(saved_dataloader=dataset)
-    # training_data = CustomSequenceDataset(dimensions=3, range=2000)
+    # training_data = CustomSequenceDataset(dimensions=3, datarange=1000, nAP_cond=10)
     train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
 
     print("started main at: " + getNowString())
@@ -38,7 +38,7 @@ def run_1desm_model(dataset = "data/dataloader_dict100.pth", batch_size=BATCH_SI
 
         #initialize weights and torchsummary
         _, seqdict = next(enumerate(train_dataloader))
-        tempsequence = seqdict['esm_seqlist']
+        tempsequence = seqdict['esm_sequences']
         tempsequence = tempsequence.to(device)
         model(tempsequence.permute(0,2,1))
         torchsummary.summary(model, (1280, 450), depth=10)
