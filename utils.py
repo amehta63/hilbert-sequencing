@@ -52,14 +52,14 @@ def hilbertCurve1Dto2D(x, dim=0):
     # 1D -> 2D means n=2
     n = 2
     hilbert_curve = HilbertCurve(p, n)
-    distances = list(range(len(x)))
+    distances = list(range(2**(2*p)))
     points = hilbert_curve.points_from_distances(distances)
     y = x.clone()
     y = functional.pad(y, (0, 2**(2*p)-len(x)))
     y = y.reshape(2**p, 2**p, -1)
     for point, dist in zip(points, distances):
         if dist < len(x): y[point[0], point[1]] = x[dist]
-        else: y[point[0], point[1]] = torch.zeros(x[0].shape)
+        else: y[point[0], point[1]] = torch.zeros_like(x[0, :])
     return y
 
 def hilbertCurve2Dto3D(x, dim=0):
