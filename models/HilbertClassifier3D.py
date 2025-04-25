@@ -10,13 +10,13 @@ class HilbertClassifier3D(nn.Module):
         self.input_size = input_size
 
         self.preClassifier = nn.Sequential(
-            self.classifyingConvSeq(self.input_size, 32),     # ((32-3+2*1)/1)+1 = 32, 32->16 
+            self.classifyingConvSeq(self.input_size, 1),     # ((32-3+2*1)/1)+1 = 32, 32->16 
             # self.classifyingConvSeq(32, 64),    # ((16-3+2*1)/1)+1 = 16, 16->8 
             #self.classifyingConvSeq(64, 128),   # ((8-3+2*1)/1)+1 = 8, 8->4
             #self.classifyingConvSeq(128, 256),  # ((4-3+2*1)/1)+1 = 4, 4->2
             #self.classifyingConvSeq(256, 512),  # ((2-3+2*1)/1)+1 = 2, 2->1
             nn.Flatten(),
-            nn.LazyLinear(1000000),
+            nn.LazyLinear(1000),
         )
 
         self.dFreg = self.classifyingLinSeq(1)

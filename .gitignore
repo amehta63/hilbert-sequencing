@@ -1,2 +1,12 @@
-__pycache__/*
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
 **/.DS_Store
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Ephemeral files from training/running models
+data/*
+checkpoints/*

@@ -3,19 +3,17 @@ import torch.nn.functional as functional
 import torch.optim as optim
 
 import time
-
-from HilbertClassifier2D import HilbertClassifier2D
-from ESMgenerator import ESMgenerator
+from models import *
 from utils import *
 
 
-def train_model(model = HilbertClassifier2D(),
+def train_model(model = HilbertClassifier2D.HilbertClassifier2D(),
     epochs=1,
     train_data=None,
     dimensions='2D',
     log_int=100,
     save_int=None,
-    save_pth=f"models/default_{datetime.datetime.now().strftime('%Y%m%d%H%M')}.pth",
+    save_pth=f"checkpoints/default_{datetime.datetime.now().strftime('%Y%m%d%H%M')}.pth",
     test_data=None,
     print_logs = True,
     device = 'cpu'
@@ -36,10 +34,10 @@ def train_model(model = HilbertClassifier2D(),
         model.train()
         for index, seqdict in enumerate(train_data):
             # print(f"for loop time: {time.time() - substart}"); substart = time.time()
-            if dimensions == '1D': input = seqdict['sequences'].to(device).unsqueeze(1)
-            if dimensions == '1DESM': input = seqdict['esm_sequences'].permute(0,2,1).to(device)
+            if dimensions == '1D': input = seqdict['sequences'].to(device)
+            if dimensions == '1DESM': input = seqdict['esm_sequences'].to(device)
             if dimensions == '2D': input = seqdict['hilbert_sequences'].to(device)
-            if dimensions == '3D': input = seqdict['esm_hilbert_sequences'].to(device).unsqueeze(1)
+            if dimensions == '3D': input = seqdict['esm_hilbert_sequences'].to(device)
             metadata = {}
             for md in ['id', 'variant', 'set', 'date', 'plate', 'well', 'mCherry', 'nAP', 'f0', 'dF', 'rise', 'decay']:
                 metadata[md] = seqdict[md].to(device)
