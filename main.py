@@ -50,6 +50,7 @@ def run_model(modeltype = '1D', dataset = "data/dataloader_dict22104.pth", batch
     print("loading data...")
     
     training_data = CustomSequenceDataset(saved_dataloader=dataset)
+    training_data.prepTensorGetItem(model_selector.datakey)
     # training_data = CustomSequenceDataset(dimensions=3, datarange=1000, nAP_cond=10)
     train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
 
@@ -100,4 +101,6 @@ if __name__ == "__main__":
         modeltype = sys.argv[1]
     if len(sys.argv) > 2:
         raise ValueError("Too many arguments.")
+        
+    print("running modeltype: " + modeltype)
     run_model(modeltype, now = None)

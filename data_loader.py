@@ -53,6 +53,7 @@ class CustomSequenceDataset(Dataset):
 
             self.esm_hilbert_seqdict = self.gen_esm_hilbert_seq_list()
 
+            self.key = None
             self.datarange = len(self.metadata['id'])
             self.save_dataloader_dict(self.datarange)
 
@@ -89,7 +90,7 @@ class CustomSequenceDataset(Dataset):
             if seq in seqdict:
                 pass
             else:
-                seqdict[seq] = torch.FloatTensor([ord(x) for x in seq]).bfloat16().squeeze().unsqueeze(1)
+                seqdict[seq] = torch.FloatTensor([ord(x) for x in seq]).bfloat16().squeeze().unsqueeze(0)
         print(f"Shape of seqdict: {type(seqdict)} of {len(seqdict[seq])}")
         return seqdict
 
@@ -115,7 +116,7 @@ class CustomSequenceDataset(Dataset):
             if seq in esm_seqdict:
                 pass
             else:
-                esm_seqdict[seq] = self.gen.residueEmbed(seq).bfloat16()
+                esm_seqdict[seq] = self.gen.residueEmbed(seq).bfloat16().permute(0,2,1).squeeze()
         print(f"Finished esm_seqdict")
         return esm_seqdict
 
@@ -126,7 +127,7 @@ class CustomSequenceDataset(Dataset):
             if seq in hilbert_seqdict:
                 pass
             else:
-                hilbert_seqdict[seq] = hilbertCurveAnyD(self.seqdict[seq].unsqueeze(0), dim=1, pad=0)
+                hilbert_seqdict[seq] = hilbertCurveAnyD(self.seqdict[seq].unsqueeze(2), dim=1, pad=0).squeeze(3)
         print(f"Finished hilbert_seqdict")
         return hilbert_seqdict
 
@@ -137,10 +138,29 @@ class CustomSequenceDataset(Dataset):
             if seq in esm_hilbert_seqdict:
                 pass
             else:
-                esm_hilbert_seqdict[seq] = hilbertCurveAnyD(self.esm_seqdict[seq], dim=1, pad=0)
+                esm_hilbert_seqdict[seq] = hilbertCurveAnyD(self.esm_seqdict[seq].permute(1,0).unsqueeze(0), dim=1, pad=0).permute(0, 3, 1, 2)
 
         print(f"Finished esm_hilbert_seqdict")
         return esm_hilbert_seqdict
+    
+    def prepTensorGetItem(self, key):
+        print("Prepping a return tensor of the data from the key provided...")
+        self.key = key
+        match key:
+            case 'sequences':
+                data = self.seqdict 
+            case 'esm_sequences':
+                data = self.esm_seqdict 
+            case 'hilbert_sequences':
+                data = self.hilbert_seqdict 
+            case 'esm_hilbert_sequences':
+                data = self.esm_hilbert_seqdict 
+            case _:
+                raise ValueError("Data key not found.")
+        returnList = []
+        for seq in self.rawsequences:
+            returnList.append(data[seq].unsqueeze(0))
+        self.returnTensor = torch.cat(returnList, dim=0)
     
     def save_dataloader_dict(self, name='no_range'): # depends on everything
         print("saving dataloader dict")
@@ -176,22 +196,29 @@ class CustomSequenceDataset(Dataset):
         self.metadata               = dataloader_dict['metadata']
         self.seqdict                = dataloader_dict['seqdict']
         self.gen                    = None if self.dimensions <3 else ESMgenerator()
-        self.esm_seqdict           = dataloader_dict['esm_seqdict']
+        self.esm_seqdict            = dataloader_dict['esm_seqdict']
         self.hilbert_seqdict        = dataloader_dict['hilbert_seqdict']
         self.esm_hilbert_seqdict    = dataloader_dict['esm_hilbert_seqdict']
+        self.key                    = None
         print("dataloader dict loaded")
 
     def __len__(self):
         return self.datarange
 
     def __getitem__(self, idx):
-        returndict = {
-            'raw_sequences': self.rawsequences[idx], 
-            'sequences': self.seqdict[self.rawsequences[idx]].squeeze().unsqueeze(0).float(), 
-            'esm_sequences': self.esm_seqdict[self.rawsequences[idx]].permute(0,2,1).squeeze().float(),
-            'hilbert_sequences': self.hilbert_seqdict[self.rawsequences[idx]].squeeze().unsqueeze(0).float(), 
-            'esm_hilbert_sequences': self.esm_hilbert_seqdict[self.rawsequences[idx]].permute(0, 3, 1, 2).squeeze().unsqueeze(0).float()
-        }
+        if self.key:
+            returndict = {
+                self.key: self.returnTensor[idx].float()
+            }
+        else:
+            returndict = {
+                'raw_sequences': self.rawsequences[idx], 
+                'sequences': self.seqdict[self.rawsequences[idx]].float(), 
+                'esm_sequences': self.esm_seqdict[self.rawsequences[idx]].float(),
+                'hilbert_sequences': self.hilbert_seqdict[self.rawsequences[idx]].float(), 
+                'esm_hilbert_sequences': self.esm_hilbert_seqdict[self.rawsequences[idx]].float()
+            }
+
         for k,v in self.metadata.items():
             returndict[k] = v[idx].float()
         return returndict
